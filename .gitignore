@@ -1,0 +1,34 @@
+# Python virtual environments
+.venv/
+venv/
+myenv/
+
+# Local configuration and secrets
+.env
+*.pem
+*.key
+*.crt
+
+# Python cache files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs and runtime output
+*.log
+nohup.out
+monitor.log
+app.log
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
