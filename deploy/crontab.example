@@ -1,1 +1,0 @@
-* * * * * cd /home/ubuntu/sre-health-monitor && /home/ubuntu/sre-health-monitor/.venv/bin/python check_metrics.py >> /home/ubuntu/sre-health-monitor/monitor.log 2>&1

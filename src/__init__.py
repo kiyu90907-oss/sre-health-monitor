@@ -1,1 +1,0 @@
-"""SRE health monitor package."""

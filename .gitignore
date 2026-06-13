@@ -1,34 +1,22 @@
-# Python virtual environments
-.venv/
-venv/
-myenv/
-
-# Local configuration and secrets
-.env
-*.pem
-*.key
-*.crt
-
-# Python cache files
+# Python 缓存
 __pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+*.pyc
 
-# Logs and runtime output
+# 虚拟环境
+myenv/
+venv/
+.venv/
+.env
+
+# 日志文件
 *.log
 nohup.out
 monitor.log
 app.log
 
-# Build artifacts
-build/
-dist/
-*.egg-info/
+# SSH / AWS 私钥，绝对不能上传
+*.pem
+.ssh/
 
-# OS and editor files
+# 系统文件
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/

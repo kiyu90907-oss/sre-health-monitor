@@ -1,16 +1,16 @@
-# SRE 服务器监控与自动巡检系统
+# SRE Health Monitor
 
-这是一个面向 SRE 入门场景的服务器监控与自动巡检项目。项目基于 Python + FastAPI 开发，提供健康检查、资源指标采集和主机信息查看接口，并配套自动巡检脚本、Docker 容器化部署示例、crontab 定时任务示例和故障处理 Runbook。
+基于 Python + FastAPI + Docker + AWS EC2 + crontab 的 SRE 服务器监控与自动巡检项目。
 
-## 功能
+## 项目介绍
 
-- `/health`：服务健康检查
-- `/metrics`：CPU、内存、磁盘资源指标
-- `/info`：主机名、操作系统、Python 版本等运行环境信息
-- `check_metrics.py`：自动请求 `/health` 和 `/metrics`，超过阈值时输出 `ALERT`
-- `Dockerfile`：容器化运行 FastAPI 服务
-- `deploy/crontab.example`：每分钟自动巡检示例
-- `runbooks/incident-response.md`：基础故障排查流程
+本项目是一个面向 SRE 入门场景的服务器监控与自动巡检系统。
+
+项目提供 `/health`、`/metrics`、`/info` 三个接口，分别用于服务健康检查、服务器资源指标采集和主机信息查看。
+
+同时，项目通过 `check_metrics.py` 自动巡检脚本定时请求 `/health` 和 `/metrics` 接口。当服务不可用，或 CPU、内存、磁盘使用率超过阈值时，会输出 `ALERT` 告警信息，并写入日志。
+
+本项目实践了 SRE 基础流程：服务部署、Docker 容器化、健康检查、指标采集、自动巡检、日志记录、故障模拟和恢复验证。
 
 ## 技术栈
 
@@ -19,205 +19,128 @@
 - psutil
 - requests
 - Docker
+- AWS EC2
 - crontab
-- Linux / Windows 本地开发
+- Linux
 
 ## 项目结构
 
 ```text
-sre-health-monitor/
-  main.py
-  check_metrics.py
-  Dockerfile
-  requirements.txt
-  config/
-  deploy/
-  runbooks/
-  src/
-    api/
-    alerting/
-    collector/
-  tests/
+sre-health-monitor
+├── main.py
+├── check_metrics.py
+├── analyze_monitor_log.py
+├── Dockerfile
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
-## 本地启动
+## 核心接口
 
-创建虚拟环境并安装依赖：
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Windows PowerShell：
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-启动服务：
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-访问接口：
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/metrics
-curl http://127.0.0.1:8000/info
-```
-
-## 接口说明
-
-### 健康检查
+### 健康检查接口
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-示例返回：
+用于判断服务是否存活。
 
-```json
-{
-  "status": "ok",
-  "timestamp": 1780906842,
-  "uptime_seconds": 12.34
-}
-```
-
-### 资源指标
+### 资源指标接口
 
 ```bash
 curl http://127.0.0.1:8000/metrics
 ```
 
-示例返回：
+用于查看 CPU、内存、磁盘使用率。
 
-```json
-{
-  "cpu_percent": 1.0,
-  "memory": {
-    "total_mb": 908.72,
-    "used_mb": 436.35,
-    "available_mb": 472.37,
-    "percent": 48.0
-  },
-  "disk": {
-    "total_gb": 6.61,
-    "used_gb": 3.48,
-    "free_gb": 3.11,
-    "percent": 52.8
-  }
-}
-```
-
-### 主机信息
+### 主机信息接口
 
 ```bash
 curl http://127.0.0.1:8000/info
 ```
 
-示例返回：
-
-```json
-{
-  "hostname": "server-01",
-  "system": "Linux",
-  "platform": "Linux-6.8.0-x86_64-with-glibc2.39",
-  "python_version": "3.11.15"
-}
-```
-
-## 自动巡检
-
-手动执行：
-
-```bash
-python check_metrics.py
-```
-
-将结果写入日志：
-
-```bash
-python check_metrics.py >> monitor.log 2>&1
-tail -n 20 monitor.log
-```
-
-脚本默认检查 `http://127.0.0.1:8000`，也可以指定地址：
-
-```bash
-python check_metrics.py --base-url http://127.0.0.1:8000
-```
-
-默认阈值为 80%。超过 CPU、内存或磁盘阈值时，脚本会输出 `ALERT` 并返回非 0 退出码。
-
-## crontab 示例
-
-```bash
-* * * * * cd /home/ubuntu/sre-health-monitor && /home/ubuntu/sre-health-monitor/.venv/bin/python check_metrics.py >> /home/ubuntu/sre-health-monitor/monitor.log 2>&1
-```
-
-这个配置表示每分钟执行一次巡检脚本，并将正常输出和错误输出追加到 `monitor.log`。
+用于查看 hostname、系统信息和 Python 版本。
 
 ## Docker 部署
 
 构建镜像：
 
 ```bash
-docker build -t sre-health-monitor .
+docker build -t sre-monitor .
 ```
 
-运行容器：
+启动容器：
 
 ```bash
-docker run -d -p 8000:8000 --name sre-monitor-container sre-health-monitor
+docker run -d -p 8000:8000 --name sre-monitor-container sre-monitor
 ```
 
-查看容器状态和日志：
+查看容器状态：
 
 ```bash
 docker ps
-docker logs -f sre-monitor-container
 ```
 
-## 故障模拟与恢复
+查看容器日志：
 
-模拟服务故障：
+```bash
+docker logs sre-monitor-container
+```
+
+## 自动巡检
+
+手动执行巡检脚本：
+
+```bash
+python3 check_metrics.py
+```
+
+将巡检结果写入日志：
+
+```bash
+python3 check_metrics.py >> monitor.log 2>&1
+```
+
+crontab 定时任务示例：
+
+```bash
+* * * * * cd /home/ubuntu && /home/ubuntu/myenv/bin/python check_metrics.py >> /home/ubuntu/monitor.log 2>&1
+```
+
+该配置表示每分钟自动执行一次巡检脚本，并将结果写入 `monitor.log`。
+
+## 日志分析
+
+执行日志分析脚本：
+
+```bash
+python3 analyze_monitor_log.py
+```
+
+该脚本用于统计巡检日志中 `HEALTH OK`、`METRICS OK` 和 `ALERT` 的出现次数，便于快速判断服务近期健康状态。
+
+## 故障模拟
+
+停止 Docker 容器：
 
 ```bash
 docker stop sre-monitor-container
-python check_metrics.py
 ```
 
-预期输出包含：
-
-```text
-ALERT: health check request failed
-ALERT: failed to check metrics
-```
+等待 crontab 自动巡检后，日志中会出现 `Connection refused` 或 `ALERT` 信息。
 
 恢复服务：
 
 ```bash
 docker start sre-monitor-container
-python check_metrics.py
 ```
 
-预期输出包含：
+服务恢复后，巡检日志会重新出现 `HEALTH OK` 和 `METRICS OK`。
 
-```text
-HEALTH OK: service is running
-METRICS OK: cpu=... memory=... disk=...
-```
+## 实践中遇到的问题
 
-## 常见问题
-
-### 端口被占用
+### 1. 端口占用
 
 现象：
 
@@ -225,24 +148,36 @@ METRICS OK: cpu=... memory=... disk=...
 address already in use
 ```
 
+原因：
+
+旧的 uvicorn 进程占用了宿主机 8000 端口。
+
 排查：
 
 ```bash
 ss -tunlp | grep 8000
 ```
 
-Windows PowerShell：
+解决：
 
-```powershell
-netstat -ano | findstr :8000
-```
+停止旧进程后重新启动 Docker 容器。
 
-### 容器名称冲突
+### 2. 容器名冲突
 
 现象：
 
 ```text
 container name is already in use
+```
+
+原因：
+
+之前创建失败的容器虽然没有运行，但容器名仍然存在。
+
+排查：
+
+```bash
+docker ps -a
 ```
 
 解决：
@@ -251,26 +186,54 @@ container name is already in use
 docker rm sre-monitor-container
 ```
 
-### 缺少依赖
+### 3. Python 依赖缺失
 
 现象：
 
 ```text
-ModuleNotFoundError
+ModuleNotFoundError: No module named 'requests'
 ```
 
 解决：
 
 ```bash
-pip install -r requirements.txt
+pip install requests
 ```
 
-## 测试
+### 4. JSON 字段不匹配
+
+现象：
+
+```text
+ALERT: Failed to check metrics: 'memory'
+```
+
+原因：
+
+巡检脚本读取的字段和 `/metrics` 接口实际返回结构不一致。
+
+排查：
 
 ```bash
-pytest
+curl http://127.0.0.1:8000/metrics
 ```
+
+解决：
+
+根据接口真实返回结构修改 `check_metrics.py` 中的字段读取逻辑。
 
 ## 项目收获
 
-通过这个项目可以实践 SRE 入门阶段常见的完整闭环：服务部署、健康检查、指标采集、自动巡检、阈值告警、日志记录、容器化部署、故障模拟、恢复验证和基础排障。
+通过该项目，我实践了 SRE 入门阶段的完整基础闭环：
+
+- 云服务器部署
+- FastAPI 服务开发
+- Docker 容器化
+- 健康检查接口
+- 资源指标采集
+- 自动巡检脚本
+- crontab 定时任务
+- 日志记录
+- 故障模拟
+- 服务恢复验证
+- 常见问题排查
