@@ -88,6 +88,20 @@ docker ps
 docker logs sre-monitor-container
 ```
 
+配置容器自动重启策略：
+
+```bash
+docker update --restart unless-stopped sre-monitor-container
+```
+
+验证重启策略：
+
+```bash
+docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' sre-monitor-container
+```
+
+如果输出 `unless-stopped`，说明容器已经具备基础自动恢复能力。只要不是手动停止容器，Docker 会在 Docker 服务重启或服务器重启后尽量自动恢复服务。
+
 ## 自动巡检
 
 手动执行巡检脚本：
@@ -119,6 +133,19 @@ python3 analyze_monitor_log.py
 ```
 
 该脚本用于统计巡检日志中 `HEALTH OK`、`METRICS OK` 和 `ALERT` 的出现次数，便于快速判断服务近期健康状态。
+
+示例输出：
+
+```text
+Monitor Log Analysis Result
+---------------------------
+HEALTH OK count: 5891
+METRICS OK count: 5891
+ALERT count: 4
+Result: Some alerts were found. Please check service or resource status.
+```
+
+其中 `ALERT count` 大于 0，通常说明服务曾经不可用或资源指标超过阈值。本项目中该结果来自故障模拟期间主动停止 Docker 容器产生的告警。
 
 ## 故障模拟
 
@@ -229,9 +256,11 @@ curl http://127.0.0.1:8000/metrics
 - 云服务器部署
 - FastAPI 服务开发
 - Docker 容器化
+- Docker 自动重启策略
 - 健康检查接口
 - 资源指标采集
 - 自动巡检脚本
+- 日志分析脚本
 - crontab 定时任务
 - 日志记录
 - 故障模拟
